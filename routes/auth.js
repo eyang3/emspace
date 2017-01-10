@@ -25,30 +25,24 @@ passport.use(new LinkedInStrategy({
 },
     function (req, accessToken, refreshToken, profile, done) {
         // asynchronous verification, for effect...
-        req.session.accessToken = accessToken;
-        process.nextTick(function () {
-            // console.log(profile);
-            user.get(profile._json.id)
-                .then(function (result) {
-                    if (result.length === 0) {
-                        return user.insert(profile._json);
-                    } else {
-                        if(user.hasNewSpecializations(profile._json, result[0].specializations)) {
-                            return user.updateSpecialization(profile._json);
-                        }
-                    }
-                })
-                .then(function () {
-                    return done(null, profile);
-                });
+        //req.session.accessToken = accessToken;
+    	done(null, profile);
 
 
-        });
     }
     ))
 
+router.get('/logout', function(req, res){
+  req.logout();
+  req.session.destroy(function (err) {
+    res.redirect('/'); //Inside a callback… bulletproof!
+  });
+})
+router.get('/reviewer', passport.authenticate('linkedin', {state: 'reviewer'}), function(req, res){});
+
+
 router.get('/linkedin',
-    passport.authenticate('linkedin', { state: 'SOME STATE' }),
+    passport.authenticate('linkedin', {state: 'recruiter'}),
     function (req, res) {
         // The request will be redirected to Linkedin for authentication, so this
         // function will not be called.
@@ -57,7 +51,8 @@ router.get('/linkedin',
 router.get('/linkedin/callback',
     passport.authenticate('linkedin', { failureRedirect: '/login' }),
     function (req, res) {
-        res.redirect('/');
+	console.log(req.query.state);
+        res.redirect('/?'+req.query.state);
     });
 
 router.get('/stuff', function (req, res) {
